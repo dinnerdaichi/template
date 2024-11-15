@@ -143,6 +143,10 @@ $font-accent_yellow: #FFEE56;`;
   const indexFilePath = path.join(__dirname, 'index.html');
   fs.writeFileSync(indexFilePath, ''); // 空ファイルを作成
 
+  // ルート直下に.gitignoreを作成
+  const gitignorePath = path.join(__dirname, '.gitignore');
+  fs.writeFileSync(gitignorePath, 'node_modules'); // node_modulesをignore
+
   // jsフォルダにscript.jsを作成（空ファイル）
   const scriptFilePath = path.join(__dirname, 'assets', 'js', 'script.js');
   fs.writeFileSync(scriptFilePath, ''); // 空ファイルを作成
