@@ -30,29 +30,53 @@ gulp.task('create', function (done) {
     }
   });
 
-  // Foundationフォルダに@useを含むファイルを作成
-  const foundationFilePath = path.join(__dirname, 'assets', 'sass', 'foundation', '_foundation.scss');
-  const foundationContent = `@use "../../foundation/variable" as v;
-@use "../../foundation/mixin" as m;`;
 
-  fs.writeFileSync(foundationFilePath, foundationContent);
-
-  // Foundationフォルダにreset.scss、variable.scss、base.scss、mixin.scssを作成
-  const foundationFiles = ['_reset.scss', '_variable.scss', '_base.scss', '_mixin.scss'];
+  // Foundationフォルダにmixin.scssを作成
+  const foundationFiles = ['_functions.scss', '_mixin.scss'];
   foundationFiles.forEach(file => {
     const filePath = path.join(__dirname, 'assets', 'sass', 'foundation', file);
-    if (file === '_variable.scss') {
-      const variableContent = `$bg-blue: #9ED0E0;
-$bg-light-blue: #E9F6F8;
-$bg-dark-blue: #67B0C7;
-$font-sub_gray: #CCE1E4;
-$font-accent_red: #CE2073;
-$font-accent_yellow: #FFEE56;`;
-      fs.writeFileSync(filePath, variableContent);  // 内容を追加してファイルを作成
-    } else if (file === '_base.scss') {
-      const baseContent = `@use './variable' as v;
-@use '../foundation/mixin' as m;`;
-      fs.writeFileSync(filePath, baseContent);  // 内容を追加してファイルを作成
+    if (file === '_functions.scss') {
+
+      const functionsContent = `@function rclamp($max, $maxViewport, $minSize: null) {
+        $minViewport: 768;
+        $scale: $max / $maxViewport;
+        $autoMin: $scale * $minViewport;
+        $min: if($minSize !=null, $minSize, $autoMin);
+
+        $minRem: $min / 16;
+        $maxRem: $max / 16;
+        $scaleRem: $scale * 100;
+
+        @return clamp(#{$minRem}rem, #{$scaleRem}vw, #{$maxRem}rem);
+      }
+
+      @function rclamp-negative($value, $valueViewport, $minSize: null) {
+        $value-rem: $value / 16;
+        $start: 1360;
+        $end: 768;
+        $base: 1920;
+
+        $scale: $value / $valueViewport;
+        $ratio: $end / $base;
+        $min: $value * $ratio;
+        $min-rem: $min / 16;
+        $scaleRem: $scale * 100;
+        $slope: (
+          $min-rem - $value-rem) / ($start - $end) * 100;
+        @return clamp(#{$value-rem}rem, #{$scaleRem}vw, #{$min-rem}rem
+      );
+      }
+
+      @function vw-sp($px, $base: 375) {
+
+        $num: if(unitless($px), $px, strip-unit($px));
+        $vw: $num / $base * 100;
+
+        @return #{$vw}vw;
+      }
+      `;
+      fs.writeFileSync(filePath, functionsContent);
+
     } else if (file === '_mixin.scss') {
       const mixinContent = `$breakpoint: (
   sp: 'screen and (max-width:767px)',
@@ -72,20 +96,20 @@ $font-accent_yellow: #FFEE56;`;
   });
 
   // Object/Projectフォルダ内のファイルを作成
-  const projectFiles = ['_about.scss', '_price.scss', '_mv.scss', '_work.scss', '_policy.scss', '_skill.scss', '_contact.scss', '_page-work.scss', '_voice.scss'];
+  const projectFiles = ['_main.scss'];
   projectFiles.forEach(file => {
     const filePath = path.join(__dirname, 'assets', 'sass', 'object', 'project', file);
-    const projectContent = `@use "../../foundation/variable" as v;
-@use "../../foundation/mixin" as m;`;
+    const projectContent = `@use "../../foundation/mixin" as m;
+@use "../../foundation/functions" as *;`;
     fs.writeFileSync(filePath, projectContent);  // 内容を追加してファイルを作成
   });
 
   // Object/Componentフォルダ内のファイルを作成
-  const componentFiles = ['_inner.scss', '_section.scss', '_swiper.scss'];
+  const componentFiles = ['_slider.scss'];
   componentFiles.forEach(file => {
     const filePath = path.join(__dirname, 'assets', 'sass', 'object', 'component', file);
-    const componentContent = `@use "../../foundation/variable" as v;
-@use "../../foundation/mixin" as m;`;
+    const componentContent = `@use "../../foundation/mixin" as m;
+@use "../../foundation/functions" as *;`;
     fs.writeFileSync(filePath, componentContent);  // 内容を追加してファイルを作成
   });
 
@@ -93,19 +117,14 @@ $font-accent_yellow: #FFEE56;`;
   const layoutFiles = ['_header.scss', '_footer.scss'];
   layoutFiles.forEach(file => {
     const filePath = path.join(__dirname, 'assets', 'sass', 'layout', file);
-    const layoutContent = `@use "../foundation/variable" as v;
-@use "../foundation/mixin" as m;`; // 修正：../に変更
+    const layoutContent = `@use "../../foundation/mixin" as m;
+@use "../../foundation/functions" as *;`; // 修正：../に変更
     fs.writeFileSync(filePath, layoutContent);  // 内容を追加してファイルを作成
   });
 
   // style.scssを作成
   const styleFilePath = path.join(__dirname, 'assets', 'sass', 'style.scss');
-  const styleContent = `/*--------------------------------------*
-  * foundation
-*--------------------------------------*/
-@use "./foundation/reset";
-@use "./foundation/variable";
-@use "./foundation/base";
+  const styleContent = `
 
 /*--------------------------------------*
     * layout
@@ -117,25 +136,12 @@ $font-accent_yellow: #FFEE56;`;
     * component
 *--------------------------------------*/
 
-// @use "./object/component/button";
-@use "./object/component/inner";
-@use "./object/component/section";
-@use "./object/component/swiper";
-// @use "./object/component/point";
-// @use "./object/component/tel";
+@use "./object/component/slider";
 
 /*--------------------------------------*
     * project
 *--------------------------------------*/
-@use "./object/project/mv";
-@use "./object/project/about";
-@use "./object/project/work";
-@use "./object/project/policy";
-@use "./object/project/skill";
-@use "./object/project/contact";
-@use "./object/project/page-work";
-@use "./object/project/price";
-@use "./object/project/voice";`;
+@use "./object/project/main";`;
 
   fs.writeFileSync(styleFilePath, styleContent);
 
