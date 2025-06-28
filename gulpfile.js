@@ -123,8 +123,8 @@ gulp.task('create', function (done) {
   const layoutFiles = ['_header.scss', '_footer.scss'];
   layoutFiles.forEach(file => {
     const filePath = path.join(__dirname, 'assets', 'sass', 'layout', file);
-    const layoutContent = `@use "../../foundation/mixin" as m;
-@use "../../foundation/functions" as *;`; // 修正：../に変更
+    const layoutContent = `@use "../foundation/mixin" as m;
+@use "../foundation/functions" as *;`; // 修正：../に変更
     fs.writeFileSync(filePath, layoutContent);  // 内容を追加してファイルを作成
   });
 
