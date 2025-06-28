@@ -123,8 +123,8 @@ gulp.task('create', function (done) {
   const layoutFiles = ['_header.scss', '_footer.scss'];
   layoutFiles.forEach(file => {
     const filePath = path.join(__dirname, 'assets', 'sass', 'layout', file);
-    const layoutContent = `@use "../foundation/mixin" as m;
-@use "../foundation/functions" as *;`; // 修正：../に変更
+    const layoutContent = `@use "../../foundation/mixin" as m;
+@use "../../foundation/functions" as *;`; // 修正：../に変更
     fs.writeFileSync(filePath, layoutContent);  // 内容を追加してファイルを作成
   });
 
@@ -216,12 +216,50 @@ gulp.task('scss', function () {
     .pipe(gulp.dest('./'));
 });
 
-gulp.task('img', function () {
-  return gulp.src('**/*.php') // ← 対象のファイル場所
-    .pipe(replace(/src=["']\/asset\/img\/(.*?)["']/g, (match, p1) => {
-      // すでに置換済みならスキップするよ！
+const themeName = 'camel';
+
+gulp.task('path', function () {
+  return gulp.src(`wp-content/themes/${themeName}/**/*.php`, { base: './' })
+
+    // imgタグのsrc置換
+    .pipe(replace(/src=["']\/?asset\/img\/(.*?)["']/g, (match, p1) => {
       if (match.includes('get_template_directory_uri')) return match;
       return `src="<?php echo get_template_directory_uri(); ?>/asset/img/${p1}"`;
     }))
-    .pipe(gulp.dest('./')); // ← 上書き保存！
+
+    // scriptタグのsrc置換
+    .pipe(replace(/<script\s+src=["']\.?\/?assets\/js\/(.*?)["']><\/script>/g, (match, p1) => {
+      if (match.includes('get_template_directory_uri')) return match;
+      return `<script src="<?php echo get_template_directory_uri(); ?>/assets/js/${p1}"></script>`;
+    }))
+
+    // linkタグのhref置換（CSS）
+    .pipe(replace(/<link\s+rel=["']stylesheet["']\s+href=["']\.?\/?assets\/css\/(.*?)["']>/g, (match, p1) => {
+      if (match.includes('get_template_directory_uri')) return match;
+      return `<link rel="stylesheet" href="<?php echo get_template_directory_uri(); ?>/assets/css/${p1}">`;
+    }))
+
+    .pipe(gulp.dest('./')); // 元ファイルに上書き✨
+});
+
+
+gulp.task('clean', function () {
+  // フォルダが存在するかチェック✨
+  const themePath = `wp-content/themes/${themeName}/**/*.php`;
+  const paths = [
+    '**/*.html',
+    '!node_modules/**',
+    '!gulpfile.js'
+  ];
+
+  if (fs.existsSync(`wp-content/themes/${themeName}`)) {
+    paths.push(themePath);
+  }
+
+  return gulp.src(paths, { base: './' })
+    .pipe(replace(/^\s*\/\/.*\n?/gm, ''))         // JSやSCSSのコメント行
+    .pipe(replace(/\/\*[\s\S]*?\*\//gm, ''))      // 複数行コメント
+    .pipe(replace(/<!--[\s\S]*?-->/gm, ''))       // HTML/PHPのコメント
+    .pipe(replace(/^\s*\n/gm, ''))                // 空行
+    .pipe(gulp.dest('./'));                       // 上書き保存！
 });
