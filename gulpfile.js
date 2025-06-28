@@ -5,7 +5,13 @@ const ejs = require('gulp-ejs');
 const rename = require('gulp-rename');
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
+const replace = require('gulp-replace');
+const postcss = require('gulp-postcss');
+const sorting = require('postcss-sorting');
+// const scss = require('postcss-scss');
+const scssParser = require('postcss-scss');
 const argv = yargs(hideBin(process.argv)).argv;
+
 
 // Sassファイルとディレクトリの自動生成タスク
 gulp.task('create', function (done) {
@@ -149,9 +155,6 @@ gulp.task('create', function (done) {
   const indexFilePath = path.join(__dirname, 'index.html');
   fs.writeFileSync(indexFilePath, ''); // 空ファイルを作成
 
-  // ルート直下に.gitignoreを作成
-  const gitignorePath = path.join(__dirname, '.gitignore');
-  fs.writeFileSync(gitignorePath, 'node_modules'); // node_modulesをignore
 
   // jsフォルダにscript.jsを作成（空ファイル）
   const scriptFilePath = path.join(__dirname, 'assets', 'js', 'script.js');
@@ -185,4 +188,40 @@ gulp.task('default', () => {
   }
   tasks.push('watch');
   return gulp.series(...tasks)();
+});
+
+
+// 置換対象のSassファイル
+const sassFiles = '**/*.scss';
+
+gulp.task('scss', function () {
+  return gulp.src(sassFiles, { base: './' })
+    .pipe(replace(/^\s*\/\/.*\n?/gm, ''))  // コメント行削除
+    .pipe(replace(/^\s*\n/gm, ''))         // 空行も削除！
+    // プロパティ並び替え（SCSS構文対応）
+    .pipe(postcss([
+      sorting({
+        'properties-order': [
+          'position', 'top', 'right', 'bottom', 'left', 'z-index',
+          'display', 'flex', 'grid', 'float', 'clear',
+          'width', 'height', 'max-width', 'max-height', 'min-width', 'min-height',
+          'margin', 'padding', 'border', 'box-sizing',
+          'background', 'background-color', 'background-image',
+          'font-family', 'font-size', 'font-weight', 'line-height', 'color', 'text-align',
+          'opacity', 'visibility', 'overflow', 'cursor', 'transition'
+        ],
+        'unspecified-properties-position': 'bottom'
+      })
+    ], { parser: scssParser }))
+    .pipe(gulp.dest('./'));
+});
+
+gulp.task('img', function () {
+  return gulp.src('**/*.php') // ← 対象のファイル場所
+    .pipe(replace(/src=["']\/asset\/img\/(.*?)["']/g, (match, p1) => {
+      // すでに置換済みならスキップするよ！
+      if (match.includes('get_template_directory_uri')) return match;
+      return `src="<?php echo get_template_directory_uri(); ?>/asset/img/${p1}"`;
+    }))
+    .pipe(gulp.dest('./')); // ← 上書き保存！
 });
